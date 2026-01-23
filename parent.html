@@ -17,20 +17,23 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbz4Woih4s0lU0R6crvCz_QRAouV6gwF-Jps9NewTgK0s1SeUUdHOZkN-nquAEYhWdCL/exec"; // Paste your /exec URL here
+        const supabase = supabase.createClient('https://wnoghxzxbwnvqbujimwh.supabase.co', 'sb_publishable_lhSV1V_m-5eyLKtf6zeZzw_y_ME9rMc');
+        async function loadPass() {
         const urlParams = new URLSearchParams(window.location.search);
         const uuid = urlParams.get('id');
-
-        // Fetch name and generate QR
-        fetch(`${API_URL}?action=getPass&uuid=${uuid}`, {
-                method: "GET",
-                redirect: "follow"
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('childName').innerText = data.name;
-                QRCode.toCanvas(document.getElementById('qr-code'), uuid, { width: 250 });
-            });
+    
+        const { data, error } = await supabase
+          .from('students')
+          .select('name')
+          .eq('id', uuid)
+          .single();
+    
+        if (data) {
+          document.getElementById('childName').innerText = data.name;
+          QRCode.toCanvas(document.getElementById('qr-code'), uuid, { width: 250 });
+        }
+      }
+      loadPass();
     </script>
 </body>
 </html>
