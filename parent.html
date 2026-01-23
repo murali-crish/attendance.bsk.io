@@ -22,7 +22,10 @@
         const uuid = urlParams.get('id');
 
         // Fetch name and generate QR
-        fetch(`${API_URL}?action=getPass&uuid=${uuid}`)
+        fetch(`${API_URL}?action=getPass&uuid=${uuid}`, {
+                method: "GET",
+                redirect: "follow"
+            })
             .then(res => res.json())
             .then(data => {
                 document.getElementById('childName').innerText = data.name;
