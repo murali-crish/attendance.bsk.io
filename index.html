@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassPass PoC</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <style>
+        :root { --primary: #6366f1; --bg: #f9fafb; }
+        body { font-family: system-ui; margin: 0; background: var(--bg); }
+        .screen { display: none; padding: 20px; min-height: 100vh; }
+        .active { display: block; }
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; cursor: pointer; }
+        .tab-bar { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; }
+        .tab.active { border-bottom: 3px solid var(--primary); font-weight: bold; }
+        .student-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<div id="screen-home" class="screen active">
+    <h1>BSK Class Pass</h1>
+    <button class="btn" onclick="showScreen('screen-teacher')">Teacher Portal</button>
+    <button class="btn" onclick="showScreen('screen-parent')">Parent Portal</button>
+    <button class="btn" onclick="showScreen('screen-student')">Student Pass (Demo)</button>
+</div>
+
+<div id="screen-teacher" class="screen">
+    <button onclick="showScreen('screen-home')">← Back</button>
+    <div class="tab-bar">
+        <div class="tab active" onclick="showTab('dashboard')">Dashboard</div>
+        <div class="tab" onclick="showTab('scanner')">Scanner</div>
+    </div>
+
+    <div id="tab-dashboard">
+        <h3>Today's Attendance</h3>
+        <div id="attendance-list">Loading...</div>
+    </div>
+
+    <div id="tab-scanner" style="display:none;">
+        <div id="reader" style="width: 100%;"></div>
+    </div>
+</div>
+
+<div id="screen-parent" class="screen">
+    <button onclick="showScreen('screen-home')">← Back</button>
+    <h2>My Students</h2>
+    <div id="parent-kids-list"></div>
+    <hr>
+    <h4>Add Student</h4>
+    <input type="text" id="new-student-name" placeholder="Student Name">
+    <button class="btn" onclick="addStudent()">Add to Roster</button>
+</div>
+
+<div id="screen-student" class="screen">
+    <button onclick="showScreen('screen-home')">← Back</button>
+    <div style="text-align: center; margin-top: 50px;">
+        <h2 id="pass-name">Student Name</h2>
+        <canvas id="pass-qr"></canvas>
+    </div>
+</div>
+
+<script>
+    // CONFIG
+    const supabaseClient = supabase.createClient('https://wnoghxzxbwnvqbujimwh.supabase.co', 'sb_publishable_lhSV1V_m-5eyLKtf6zeZzw_y_ME9rMc');
+    let html5Scanner = null;
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        if (screenId === 'screen-teacher') loadAttendance();
+        if (screenId === 'screen-parent') loadParentKids();
+        if (screenId === 'screen-student') loadStudentPass("DEFAULT_UUID_HERE");
+    }
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-dashboard').style.display = tabName === 'dashboard' ? 'block' : 'none';
+        document.getElementById('tab-scanner').style.display = tabName === 'scanner' ? 'block' : 'none';
+
+        if (tabName === 'scanner') {
+            startScanner();
+        } else if (html5Scanner) {
+            html5Scanner.clear();
+        }
+    }
+
+    // --- TEACHER LOGIC ---
+    async function loadAttendance() {
+        const { data } = await supabaseClient.from('attendance').select('created_at, students(name)').order('created_at', {ascending: false});
+        document.getElementById('attendance-list').innerHTML = data.map(entry =>
+            `<div class="student-card">${new Date(entry.created_at).toLocaleTimeString()} - ${entry.students.name}</div>`
+        ).join('');
+    }
+
+    function startScanner() {
+        html5Scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5Scanner.render(async (uuid) => {
+            const { error } = await supabaseClient.from('attendance').insert([{ student_id: uuid }]);
+            if (!error) {
+                alert("Checked in!");
+                loadAttendance();
+                showTab('dashboard');
+            }
+        });
+    }
+
+    // --- PARENT LOGIC ---
+    async function loadParentKids() {
+        const parentEmail = "parent@example.com"; // Mock login
+        const { data } = await supabaseClient.from('students').select('*').eq('parent_email', parentEmail);
+        document.getElementById('parent-kids-list').innerHTML = data.map(kid =>
+            `<div class="student-card" onclick="loadStudentPass('${kid.id}')">
+                    ${kid.name} >
+                </div>`
+        ).join('');
+    }
+
+    async function addStudent() {
+        const name = document.getElementById('new-student-name').value;
+        await supabaseClient.from('students').insert([{ name, parent_email: "parent@example.com" }]);
+        loadParentKids();
+    }
+
+    // --- STUDENT LOGIC ---
+    async function loadStudentPass(uuid) {
+        const { data } = await supabaseClient.from('students').select('name').eq('id', uuid).single();
+        if (data) {
+            showScreen('screen-student');
+            document.getElementById('pass-name').innerText = data.name;
+            QRCode.toCanvas(document.getElementById('pass-qr'), uuid, { width: 250 });
+        }
+    }
+</script>
+</body>
+</html>

@@ -22,13 +22,13 @@
         async function loadPass() {
         const urlParams = new URLSearchParams(window.location.search);
         const uuid = urlParams.get('id');
-    
+
         const { data, error } = await supabaseClient
           .from('students')
           .select('name')
           .eq('id', uuid)
           .single();
-    
+
         if (data) {
           document.getElementById('childName').innerText = data.name;
           QRCode.toCanvas(document.getElementById('qr-code'), uuid, { width: 250 });
