@@ -1,1 +1,1 @@
-# attendance.bsk.io
+# BSK Attendance Register
