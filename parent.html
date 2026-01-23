@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block; }
+        canvas { margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="childName">Loading Pass...</h2>
+        <canvas id="qr-code"></canvas>
+        <p>Show this to the teacher at drop-off</p>
+    </div>
+
+    <script>
+        const API_URL = "YOUR_WEB_APP_URL"; // Paste your /exec URL here
+        const urlParams = new URLSearchParams(window.location.search);
+        const uuid = urlParams.get('id');
+
+        // Fetch name and generate QR
+        fetch(`${API_URL}?action=getPass&uuid=${uuid}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('childName').innerText = data.name;
+                QRCode.toCanvas(document.getElementById('qr-code'), uuid, { width: 250 });
+            });
+    </script>
+</body>
+</html>
