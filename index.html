@@ -23,7 +23,7 @@
 
 <div id="screen-home" class="screen active">
     <h1>BSK Class Pass</h1>
-    <button class="btn" onclick="showScreen('screen-teacher')">Teacher Portal</button>
+    <button class="btn" style="display: none;" onclick="showScreen('screen-teacher')">Teacher Portal</button>
     <button class="btn" onclick="showScreen('screen-parent')">Parent Portal</button>
     <button class="btn" onclick="showScreen('screen-student')">Student Pass (Demo)</button>
 </div>
@@ -69,8 +69,25 @@
     const API_URL = 'https://wnoghxzxbwnvqbujimwh.supabase.co'
     const API_TOKEN = 'sb_publishable_lhSV1V_m-5eyLKtf6zeZzw_y_ME9rMc'
     let html5Scanner = null;
-
     const supabaseClient = supabase.createClient(API_URL, API_TOKEN);
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get("role");
+
+    // Create the manifest link element dynamically
+    const link = document.createElement("link");
+    link.rel = "manifest";
+
+    if (role === "teacher") {
+        link.href = "teacher.webmanifest";
+        document.getElementById("teacher-btn").style.display = "block";
+    } else {
+        link.href = "parent.webmanifest";
+    }
+
+    document.head.appendChild(link);
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js");
+    }
 
     function tryTeacherAccess() {
         const pin = prompt("Enter Volunteer PIN:")
