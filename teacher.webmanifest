@@ -1,0 +1,7 @@
+{
+  "name": "BSK Teacher",
+  "short_name": "Scanner",
+  "start_url": "index.html?role=teacher",
+  "display": "standalone",
+  "icons": [{ "src": "bsk-teacher-icon.png", "sizes": "192x192", "type": "image/png" }]
+}
