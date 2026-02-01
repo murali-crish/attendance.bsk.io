@@ -2,66 +2,136 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClassPass PoC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vishva Hindu Parishad Australia Inc.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
-        :root { --primary: #6366f1; --bg: #f9fafb; }
-        body { font-family: system-ui; margin: 0; background: var(--bg); }
-        .screen { display: none; padding: 20px; min-height: 100vh; }
-        .active { display: block; }
-        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; background: var(--primary); color: white; font-size: 16px; cursor: pointer; }
-        .tab-bar { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 20px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; }
-        .tab.active { border-bottom: 3px solid var(--primary); font-weight: bold; }
-        .student-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900">
 
-<div id="screen-home" class="screen active">
-    <h1>BSK Class Pass</h1>
-    <button class="btn" id="teacher-btn" style="display: none;" onclick="showScreen('screen-teacher')">Teacher Portal</button>
-    <button class="btn" id="parent-btn" onclick="showScreen('screen-parent')">Parent Portal</button>
-    <button class="btn" id="student-btn" onclick="showScreen('screen-student')">Student Pass (Demo)</button>
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center">
+    <span class="font-bold text-indigo-600 text-xl tracking-tight">ClassPass</span>
+    <div id="user-badge" class="hidden px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">Teacher</div>
+</nav>
+
+<main id="app-container" class="max-w-md mx-auto p-4 mb-24">
+</main>
+
+<div id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t safe-area-bottom flex justify-around p-3 z-50">
+    <button onclick="router.navigate('dashboard')" class="flex flex-col items-center text-slate-400 nav-link" id="nav-dashboard">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
+        <span class="text-[10px] mt-1">Scan</span>
+    </button>
 </div>
 
-<div id="screen-teacher" class="screen">
-    <button onclick="showScreen('screen-home')">← Back</button>
-    <div class="tab-bar">
-        <div class="tab active" onclick="showTab('dashboard')">Dashboard</div>
-        <div class="tab" onclick="showTab('scanner')">Scanner</div>
+<template id="tpl-home">
+    <div class="space-y-6 mt-8">
+        <div class="text-center">
+            <h2 class="text-3xl font-extrabold text-slate-800">Welcome.</h2>
+            <p class="text-slate-500 mt-2">Community service starts here.</p>
+        </div>
+        <div class="space-y-3">
+            <button onclick="handleTeacherEntry()" class="w-full bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex items-center justify-between hover:bg-slate-50 transition">
+                <div class="flex items-center">
+                    <div class="bg-indigo-100 p-3 rounded-xl mr-4 text-indigo-600">👤</div>
+                    <div class="text-left"><p class="font-bold">Volunteer Teacher</p><p class="text-xs text-slate-400">Scanner & Dashboard</p></div>
+                </div>
+                <span>→</span>
+            </button>
+            <button onclick="router.navigate('parent-lookup')" class="w-full bg-white border border-slate-200 p-4 rounded-2xl shadow-sm flex items-center justify-between hover:bg-slate-50 transition">
+                <div class="flex items-center">
+                    <div class="bg-emerald-100 p-3 rounded-xl mr-4 text-emerald-600">👪</div>
+                    <div class="text-left"><p class="font-bold">Parent Portal</p><p class="text-xs text-slate-400">View Student Passes</p></div>
+                </div>
+                <span>→</span>
+            </button>
+        </div>
     </div>
+</template>
 
-    <div id="tab-dashboard">
-        <h3>Today's Attendance</h3>
-        <div id="attendance-list">Loading...</div>
+<template id="tpl-dashboard">
+    <div class="space-y-4">
+        <div class="flex justify-between items-end">
+            <div>
+                <h2 class="text-2xl font-bold">Activity</h2>
+                <p class="text-slate-500 text-sm">Real-time check-ins</p>
+            </div>
+            <button onclick="loadAttendance()" class="text-indigo-600 text-sm font-semibold">Refresh</button>
+        </div>
+
+        <div id="attendance-list" class="space-y-3">
+        </div>
     </div>
+</template>
 
-    <div id="tab-scanner" style="display:none;">
-        <div id="reader" style="width: 100%;"></div>
+<template id="tpl-scanner">
+    <div class="space-y-4">
+        <h2 class="text-2xl font-bold">Scanner</h2>
+        <div id="reader" class="overflow-hidden rounded-3xl border-4 border-white shadow-xl bg-black"></div>
+        <div id="scan-feedback" class="text-center p-4 rounded-2xl bg-slate-100 text-slate-600 font-medium">
+            Point camera at student QR
+        </div>
     </div>
-</div>
+</template>
 
-<div id="screen-parent" class="screen">
-    <button onclick="showScreen('screen-home')">← Back</button>
-    <h2>My Students</h2>
-    <div id="parent-kids-list"></div>
-    <hr>
-    <h4>Add Student</h4>
-    <input type="text" id="new-student-name" placeholder="Student Name">
-    <button class="btn" onclick="addStudent()">Add to Roster</button>
-</div>
-
-<div id="screen-student" class="screen">
-    <button onclick="showScreen('screen-home')">← Back</button>
-    <div style="text-align: center; margin-top: 50px;">
-        <h2 id="pass-name">Student Name</h2>
-        <canvas id="pass-qr"></canvas>
+<template id="tpl-parent-lookup">
+    <div class="space-y-6">
+        <button onclick="router.navigate('home')" class="text-slate-400 text-sm">← Back</button>
+        <h2 class="text-2xl font-bold">Parent Access</h2>
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+            <label class="block text-xs font-semibold text-slate-400 uppercase mb2">Phone Number</label>
+            <input type="tel" id="lookup-phone" placeholder="0400 000 000" class="w-full text-lg p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+            <button onclick="performParentLookup()" class="w-full mt-4 bg-indigo-600 text-white p-4 rounded-xl font-bold shadow-indigo-200 shadow-lg">
+                View My Child's Pass
+            </button>
+        </div>
     </div>
-</div>
+</template>
+
+<template id="tpl-parent-hub">
+    <div class="space-y-6 pb-20">
+        <button onclick="router.navigate('home')" class="text-slate-400 text-sm">← Back</button>
+        <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-bold">My Children</h2>
+            <span id="child-count" class="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-xs font-bold">0</span>
+        </div>
+
+        <div id="passes-container" class="space-y-8">
+        </div>
+    </div>
+</template>
+
+<template id="tpl-student">
+    <div class="space-y-6">
+        <button onclick="router.navigate('home')" class="text-slate-400 text-sm">← Back</button>
+
+        <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 p-8 text-center">
+                <div class="w-20 h-20 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl">
+                    🎓
+                </div>
+                <h2 id="pass-name" class="text-2xl font-bold text-white tracking-tight">Loading...</h2>
+                <p class="text-indigo-100 text-xs uppercase tracking-widest mt-1">Official Student Pass</p>
+            </div>
+
+            <div class="p-10 flex flex-col items-center justify-center space-y-6">
+                <div class="p-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <canvas class="pass-qr rounded-xl" data-student-id=""></canvas>
+                </div>
+                <p class="text-slate-400 text-[10px] text-center max-w-[180px]">
+                    Present this code to the volunteer at the classroom door for check-in.
+                </p>
+            </div>
+        </div>
+    </div>
+</template>
 
 <script>
     // CONFIG
@@ -70,100 +140,166 @@
     const API_TOKEN = 'sb_publishable_lhSV1V_m-5eyLKtf6zeZzw_y_ME9rMc'
     let html5Scanner = null;
     const supabaseClient = supabase.createClient(API_URL, API_TOKEN);
-    const urlParams = new URLSearchParams(window.location.search);
-    const role = urlParams.get("role");
 
-    // Create the manifest link element dynamically
-    const link = document.createElement("link");
-    link.rel = "manifest";
+    // Initialize first screen
+    window.onload = () => router.navigate('home');
 
-    if (role === "teacher") {
-        link.href = "teacher.webmanifest";
-        document.getElementById("teacher-btn").style.display = "block";
-    } else {
-        link.href = "parent.webmanifest";
+    function handleTeacherEntry() {
+        const pin = prompt("Teacher Access PIN:");
+        if(pin === "1234") router.navigate('dashboard');
     }
 
-    document.head.appendChild(link);
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("sw.js");
-    }
+    // --- ROUTER ENGINE ---
+    const router = {
+        current: 'home',
+        navigate(screen) {
+            this.current = screen;
+            const container = document.getElementById('app-container');
+            const tpl = document.getElementById(`tpl-${screen}`);
 
-    function tryTeacherAccess() {
-        const pin = prompt("Enter Volunteer PIN:")
+            // Clear and Inject
+            container.innerHTML = '';
+            if (tpl) container.appendChild(tpl.content.cloneNode(true));
 
-        if (pin === SECRET_PIN) {
-            showScreen('screen-teacher');
-        } else {
-            alert("Incorrect PIN. Please ask the coordinator.")
+            // Toggle UI Elements
+            document.getElementById('bottom-nav').style.display = (screen === 'dashboard' || screen === 'scanner') ? 'flex' : 'none';
+            document.getElementById('user-badge').style.display = (screen === 'dashboard' || screen === 'scanner') ? 'block' : 'none';
+
+            // Additional init logic based on screen
+            if(screen === 'dashboard') loadLiveDashboard();
+
         }
-    }
+    };
 
-    function showScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-        if (screenId === 'screen-teacher') loadAttendance();
-        if (screenId === 'screen-parent') loadParentKids();
-        if (screenId === 'screen-student') loadStudentPass("DEFAULT_UUID_HERE");
-    }
-
-    function showTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-dashboard').style.display = tabName === 'dashboard' ? 'block' : 'none';
-        document.getElementById('tab-scanner').style.display = tabName === 'scanner' ? 'block' : 'none';
-
-        if (tabName === 'scanner') {
-            startScanner();
-        } else if (html5Scanner) {
-            html5Scanner.clear();
-        }
-    }
-
-    // --- TEACHER LOGIC ---
+    // --- DASHBOARD LOGIC ---
     async function loadAttendance() {
-        const { data } = await supabaseClient.from('attendance').select('created_at, students(name)').order('created_at', {ascending: false});
-        document.getElementById('attendance-list').innerHTML = data.map(entry =>
-            `<div class="student-card">${new Date(entry.created_at).toLocaleTimeString()} - ${entry.students.name}</div>`
-        ).join('');
+        const list = document.getElementById('attendance-list');
+        if (!list) return;
+
+        const { data, error } = await supabaseClient
+            .from('attendance')
+            .select('created_at, students(name)')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (data) {
+            list.innerHTML = data.map(entry => `
+            <div class="glass-card p-4 rounded-2xl flex justify-between items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div>
+                    <p class="font-bold text-slate-800">${entry.students.name}</p>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest">${new Date(entry.created_at).toLocaleTimeString()}</p>
+                </div>
+                <div class="bg-emerald-100 text-emerald-600 p-2 rounded-full">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293a1 1 0 0.11.414 0z" clip-rule="evenodd"></path></svg>
+                 </div>
+            </div>
+            `).join('');
+        }
     }
 
-    function startScanner() {
-        html5Scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5Scanner.render(async (uuid) => {
-            const { error } = await supabaseClient.from('attendance').insert([{ student_id: uuid }]);
-            if (!error) {
-                alert("Checked in!");
-                loadAttendance();
-                showTab('dashboard');
-            }
+    // SETUP REAL-TIME SUBSCRIPTION
+    supabaseClient
+        .channel('public:attendance')
+        .on('postgres_changes', { event: 'INSERT', table: 'attendance' }, () => {
+            if (router.current === 'dashboard') loadAttendance();
+        })
+        .subscribe();
+
+    // --- PARENT LOOKUP LOGIC ---
+    async function performParentLookup() {
+        const phone = document.getElementById('lookup-phone').value;
+        const cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
+        const { data: kids, error } = await supabaseClient
+            .from('students')
+            .select('*')
+            .eq('parent_phone', cleanPhone);
+
+        if (kids && kids.length > 0) {
+            router.navigate('parent-hub');
+            renderAllPasses(kids);
+        } else {
+            alert("No students found with that number.")
+        }
+    }
+
+    function renderAllPasses(kids) {
+        const container = document.getElementById('passes-container');
+        document.getElementById('child-count').innerText = kids.length;
+        container.innerHTML = '';
+
+        kids.forEach(kid => {
+            // 1. Create the Card HTML
+            /*const cardHtml = `
+                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 mb-6">
+                    <div class="bg-indigo-600 p-6 text-center">
+                        <h3 class="text-xl font-bold text-white">${kid.name}</h3>
+                        <p class="text-indigo-100 text-[10px] uppercase tracking-widest mt-1">Student Pass</p>
+                    </div>
+                    <div class="p-8 flex flex-col items-center justify-center">
+                        <div class="p-3 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                            <canvas id="qr-${kid.id}"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;*/
+            const tpl = document.getElementById('tpl-student');
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(tpl.content.cloneNode(true));
+            tempDiv.querySelector('#pass-name').innerText = kid.name;
+            tempDiv.querySelector('.pass-qr').setAttribute('data-student-id', kid.id);
+            const cardHtml = tempDiv.innerHTML;
+
+            container.innerHTML += cardHtml;
+
+            // 2. Generate the QR for this specific kid
+            // We use a slight delay to ensure the HTML is in the DOM
+            setTimeout(() => {
+                const canvas = document.querySelector(`canvas.pass-qr[data-student-id='${kid.id}']`);
+                QRCode.toCanvas(canvas, kid.id, {
+                    width: 220,
+                    margin: 2,
+                    color: { dark: '#1e293b', light: '#f8fafc' }
+                });
+            }, 100);
         });
     }
 
-    // --- PARENT LOGIC ---
-    async function loadParentKids() {
-        const parentEmail = "parent@example.com"; // Mock login
-        const { data } = await supabaseClient.from('students').select('*').eq('parent_email', parentEmail);
-        document.getElementById('parent-kids-list').innerHTML = data.map(kid =>
-            `<div class="student-card" onclick="loadStudentPass('${kid.id}')">
-                    ${kid.name} >
-                </div>`
-        ).join('');
-    }
-
-    async function addStudent() {
-        const name = document.getElementById('new-student-name').value;
-        await supabaseClient.from('students').insert([{ name, parent_email: "parent@example.com" }]);
-        loadParentKids();
-    }
-
-    // --- STUDENT LOGIC ---
+    // --- STUDENT ---
     async function loadStudentPass(uuid) {
-        const { data } = await supabaseClient.from('students').select('name').eq('id', uuid).single();
-        if (data) {
-            showScreen('screen-student');
-            document.getElementById('pass-name').innerText = data.name;
-            QRCode.toCanvas(document.getElementById('pass-qr'), uuid, { width: 250 });
+        // 1. Fetch Student Details
+        const { data, error } = await supabaseClient
+            .from('students')
+            .select('name')
+            .eq('id', uuid)
+            .single();
+
+        if (error || !data) {
+            alert("Could not load student data.");
+            router.navigate('home');
+            return;
         }
+
+        // 2. Update the UI
+        document.getElementById('pass-name').innerText = data.name;
+
+        // 3. Generate QR Code
+        // Note: We use a small delay to ensure the template is fully rendered in the DOM
+        setTimeout(() => {
+            const canvas = document.getElementById('pass-qr');
+            if (canvas) {
+                QRCode.toCanvas(canvas, uuid, {
+                    width: 220,
+                    margin: 2,
+                    color: {
+                        dark: '#1e293b', // Slate-800
+                        light: '#f8fafc' // Slate-50
+                    }
+                }, function (error) {
+                    if (error) console.log(error);
+                    console.log('QR Code generated successfully!');
+                });
+            }
+        }, 100);
     }
 </script>
 </body>
