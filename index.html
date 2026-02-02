@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -25,7 +26,7 @@
 </main>
 
 <div id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t safe-area-bottom flex justify-around p-3 z-50">
-    <button onclick="router.navigate('dashboard')" class="flex flex-col items-center text-slate-400 nav-link" id="nav-dashboard">
+    <button onclick="router.navigate('scanner')" class="flex flex-col items-center text-slate-400 nav-link" id="nav-dashboard">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
         <span class="text-[10px] mt-1">Scan</span>
     </button>
@@ -165,7 +166,9 @@
             document.getElementById('user-badge').style.display = (screen === 'dashboard' || screen === 'scanner') ? 'block' : 'none';
 
             // Additional init logic based on screen
-            if(screen === 'dashboard') loadLiveDashboard();
+           // if(screen === 'dashboard') loadLiveDashboard();
+
+            if (screen === 'scanner') startScanner();
 
         }
     };
@@ -204,6 +207,21 @@
         })
         .subscribe();
 
+    function startScanner() {
+        console.log('startScanner');
+        html5Scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5Scanner.render(async (uuid) => {
+            const { error } = await supabaseClient.from('attendance').insert([{
+                student_id: uuid,
+            }]);
+            if (!error) {
+                alert("Checked in!");
+                loadAttendance();
+                showTab('dashboard');
+            }
+        });
+    }
+
     // --- PARENT LOOKUP LOGIC ---
     async function performParentLookup() {
         const phone = document.getElementById('lookup-phone').value;
@@ -228,19 +246,6 @@
 
         kids.forEach(kid => {
             // 1. Create the Card HTML
-            /*const cardHtml = `
-                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-slate-100 mb-6">
-                    <div class="bg-indigo-600 p-6 text-center">
-                        <h3 class="text-xl font-bold text-white">${kid.name}</h3>
-                        <p class="text-indigo-100 text-[10px] uppercase tracking-widest mt-1">Student Pass</p>
-                    </div>
-                    <div class="p-8 flex flex-col items-center justify-center">
-                        <div class="p-3 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                            <canvas id="qr-${kid.id}"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;*/
             const tpl = document.getElementById('tpl-student');
             const tempDiv = document.createElement('div');
             tempDiv.appendChild(tpl.content.cloneNode(true));
@@ -261,44 +266,6 @@
                 });
             }, 100);
         });
-    }
-
-    // --- STUDENT ---
-    async function loadStudentPass(uuid) {
-        // 1. Fetch Student Details
-        const { data, error } = await supabaseClient
-            .from('students')
-            .select('name')
-            .eq('id', uuid)
-            .single();
-
-        if (error || !data) {
-            alert("Could not load student data.");
-            router.navigate('home');
-            return;
-        }
-
-        // 2. Update the UI
-        document.getElementById('pass-name').innerText = data.name;
-
-        // 3. Generate QR Code
-        // Note: We use a small delay to ensure the template is fully rendered in the DOM
-        setTimeout(() => {
-            const canvas = document.getElementById('pass-qr');
-            if (canvas) {
-                QRCode.toCanvas(canvas, uuid, {
-                    width: 220,
-                    margin: 2,
-                    color: {
-                        dark: '#1e293b', // Slate-800
-                        light: '#f8fafc' // Slate-50
-                    }
-                }, function (error) {
-                    if (error) console.log(error);
-                    console.log('QR Code generated successfully!');
-                });
-            }
-        }, 100);
     }
 </script>
 </body>
