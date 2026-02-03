@@ -229,7 +229,7 @@
         const { data: kids, error } = await supabaseClient
             .from('students')
             .select('*')
-            .eq('parent_phone', cleanPhone);
+            .or(`parent1_phone.eq.${cleanPhone},parent2_phone.eq.${cleanPhone}`);
 
         if (kids && kids.length > 0) {
             router.navigate('parent-hub');
