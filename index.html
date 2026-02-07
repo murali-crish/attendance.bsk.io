@@ -251,6 +251,7 @@
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     let scanCooldown = false;
+    let cleanPhone = '';
 
     async function tick() {
         if (scanCooldown) {
@@ -276,7 +277,7 @@
                     // Insert attendance record
                     const {error: insertError} = await supabaseClient
                         .from('attendance')
-                        .insert([{student_id: code.data}]);
+                        .insert([{student_id: code.data, scanned_phone: cleanPhone}]);
                     if (!insertError) {
                         document.getElementById('scan-feedback').innerHTML = `
                         <div class="flex items-center space-x-3">
@@ -311,7 +312,7 @@
     // --- PARENT LOOKUP LOGIC ---
     async function performParentLookup() {
         const phone = document.getElementById('lookup-phone').value;
-        const cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
+        cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
         const { data: kids, error } = await supabaseClient
             .from('students')
             .select('*')
