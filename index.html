@@ -7,12 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .html5-qrcode-element { color: #fff; }
+        #reader {
+            height: 500px;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -146,7 +151,7 @@
 
     function handleTeacherEntry() {
         const pin = prompt("Teacher Access PIN:");
-        if(pin === "1234") router.navigate('dashboard');
+        if(pin === SECRET_PIN) router.navigate('dashboard');
     }
 
     // --- ROUTER ENGINE ---
@@ -207,19 +212,70 @@
         })
         .subscribe();
 
+    const video = document.createElement('video');
     function startScanner() {
-        console.log('startScanner');
-        html5Scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5Scanner.render(async (uuid) => {
-            const { error } = await supabaseClient.from('attendance').insert([{
-                student_id: uuid,
-            }]);
-            if (!error) {
-                alert("Checked in!");
-                loadAttendance();
-                showTab('dashboard');
+        video.setAttribute('playsinline', true);
+        document.getElementById('reader').appendChild(video);
+
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'user'
             }
+        }).then(stream => {
+            video.srcObject = stream;
+            video.play();
+            requestAnimationFrame(() => tick());
         });
+    }
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    async function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+                // Lookup student by ID (code.data)
+                const {data, error} = await supabaseClient
+                    .from('students')
+                    .select('name')
+                    .eq('id', code.data)
+                    .single();
+                if (data && data.name) {
+                    // Insert attendance record
+                    const {error: insertError} = await supabaseClient
+                        .from('attendance')
+                        .insert([{student_id: code.data}]);
+                    if (!insertError) {
+                        document.getElementById('scan-feedback').innerHTML = `
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="bg-emerald-100 rounded-full p-4 mb-2">
+                                <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <div class="text-lg font-bold text-emerald-700">Checked in: ${data.name}</div>
+                        </div>
+                        `;
+                    } else {
+                        document.getElementById('scan-feedback').innerHTML = `
+                            <div class="text-red-600 font-bold">Attendance not recorded</div>
+                        `;
+                    }
+                } else {
+                    document.getElementById('scan-feedback').innerHTML = `
+                        <div class="text-red-600 font-bold">Student not found</div>
+                    `;
+                }
+                video.srcObject.getTracks().forEach(track => track.stop());
+                return;
+            }
+        }
+        requestAnimationFrame(tick);
     }
 
     // --- PARENT LOOKUP LOGIC ---
