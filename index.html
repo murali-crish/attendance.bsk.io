@@ -273,11 +273,10 @@
                 const {data, error} = await supabaseClient
                     .from('students')
                     .select('name')
-                    .eq('id', code.data)
+                    .eq('id', studentId)
                     .single();
                 if (data && data.name) {
                     // Get parent phone from student record
-                    const parentPhone = data.parent1_phone || data.parent2_phone || '';
                     // Insert attendance record with parent phone
                     const {error: insertError} = await supabaseClient
                         .from('attendance')
