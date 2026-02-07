@@ -267,7 +267,9 @@
             const code = jsQR(imageData.data, imageData.width, imageData.height);
             if (code) {
                 scanCooldown = true;
-                // Lookup student by ID (code.data)
+                // Split QR code data
+                const [studentId, scannedPhone] = code.data.split('|');
+                // Lookup student by ID
                 const {data, error} = await supabaseClient
                     .from('students')
                     .select('name')
@@ -279,7 +281,7 @@
                     // Insert attendance record with parent phone
                     const {error: insertError} = await supabaseClient
                         .from('attendance')
-                        .insert([{student_id: code.data, scanned_phone: parentPhone}]);
+                        .insert([{student_id: studentId, scanned_phone: scannedPhone}]);
                     if (!insertError) {
                         document.getElementById('scan-feedback').innerHTML = `
                         <div class="flex items-center space-x-3">
@@ -348,7 +350,8 @@
             // We use a slight delay to ensure the HTML is in the DOM
             setTimeout(() => {
                 const canvas = document.querySelector(`canvas.pass-qr[data-student-id='${kid.id}']`);
-                QRCode.toCanvas(canvas, kid.id, {
+                const qrData = `${kid.id}|${cleanPhone}`
+                QRCode.toCanvas(canvas, qrData, {
                     width: 220,
                     margin: 2,
                     color: { dark: '#1e293b', light: '#f8fafc' }
