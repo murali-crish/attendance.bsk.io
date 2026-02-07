@@ -250,8 +250,14 @@
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    let scanCooldown = false;
 
     async function tick() {
+        if (scanCooldown) {
+            requestAnimationFrame(tick);
+            return;
+        }
+
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -259,6 +265,7 @@
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(imageData.data, imageData.width, imageData.height);
             if (code) {
+                scanCooldown = true;
                 // Lookup student by ID (code.data)
                 const {data, error} = await supabaseClient
                     .from('students')
@@ -291,8 +298,11 @@
                         <div class="text-red-600 font-bold">Student not found</div>
                     `;
                 }
-                video.srcObject.getTracks().forEach(track => track.stop());
-                return;
+                // Wait 2 seconds, then allow next scan
+                setTimeout(() => {
+                    document.getElementById('scan-feedback').innerHTML = `Point camera at student QR`;
+                    scanCooldown = false;
+                }, 2000);
             }
         }
         requestAnimationFrame(tick);
