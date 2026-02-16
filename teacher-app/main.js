@@ -1,14 +1,68 @@
 import { startScanner, stopVideoStream, toggleCamera } from "./scanner.js";
 import { loadAttendance } from "./attendance.js";
+import { initAuth, attemptLogin, logout } from "./auth.js";
 
 window.onload = () => {
+    initAuth(
+        () => initApp(), // On Login
+        () => showPinEntry() // On Logout
+    );
+};
+
+function showPinEntry() {
+    stopVideoStream();
+    const template = document.getElementById('tpl-pin-entry');
+    const container = document.getElementById('app-container');
+    const nav = document.getElementById('bottom-nav');
+    
+    // Hide navigation
+    if (nav) nav.classList.add('hidden');
+    
+    container.innerHTML = '';
+    if (template && container) {
+        container.appendChild(template.content.cloneNode(true));
+        
+        const pinInput = document.getElementById('pin-input');
+        const errorMsg = document.getElementById('pin-error');
+        
+        if (pinInput) {
+            pinInput.focus();
+            pinInput.addEventListener('input', (e) => {
+                const val = e.target.value;
+                
+                // Clear error on input
+                if (errorMsg) errorMsg.style.opacity = '0';
+                e.target.classList.remove('ring-red-500', 'border-red-500');
+                
+                if (val.length === 4) {
+                    if (attemptLogin(val)) {
+                        // Success handled by callback
+                    } else {
+                        // Error
+                        if (errorMsg) errorMsg.style.opacity = '1';
+                        e.target.value = '';
+                        e.target.classList.add('ring-red-500', 'border-red-500');
+                    }
+                }
+            });
+        }
+    }
+}
+
+function initApp() {
+    const nav = document.getElementById('bottom-nav');
+    if (nav) nav.classList.remove('hidden');
+    
     // Initialize with Scanner view
     showScanner();
     
     // Attach Tab Bar Events
-    document.getElementById('tab-scanner').onclick = showScanner;
-    document.getElementById('tab-attendance').onclick = showAttendance;
-};
+    const tabScanner = document.getElementById('tab-scanner');
+    const tabAttendance = document.getElementById('tab-attendance');
+    
+    if (tabScanner) tabScanner.onclick = showScanner;
+    if (tabAttendance) tabAttendance.onclick = showAttendance;
+}
 
 function updateTabUI(activeTabId) {
     const tabs = ['tab-scanner', 'tab-attendance'];
