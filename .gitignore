@@ -1,1 +1,22 @@
+# macOS system files
+.DS_Store
+
+# npm logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.*
+
+# Build output (if applicable)
+dist/
+build/
+out/
+
+# Editor and IDE files
 .idea
+.vscode/
+
+node_modules/
