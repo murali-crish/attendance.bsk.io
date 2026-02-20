@@ -2,6 +2,7 @@
 import {appState} from "../shared/state.js";
 import {recordAttendance} from "./attendance.js";
 import {supabaseClient} from "../shared/supabase.js";
+import jsQR from "jsqr";
 
 // Initialize context
 appState.context = appState.canvas.getContext('2d');
@@ -11,12 +12,12 @@ export function startScanner(mode = appState.cameraMode) {
     resetScanFeedback();
     stopVideoStream();
     appState.video.setAttribute('playsinline', true);
-    
+
     // Ensure video fills the container
     appState.video.style.width = '100%';
     appState.video.style.height = '100%';
     appState.video.style.objectFit = 'cover';
-    
+
     const reader = document.getElementById('reader');
     if (reader) {
         reader.appendChild(appState.video);
@@ -86,7 +87,7 @@ export async function handleQRCodeScan(data) {
 export function setScanFeedback(message, isError = false) {
     const feedback = document.getElementById('scan-feedback');
     if (!feedback) return;
-    
+
     feedback.innerHTML = isError
         ? `<div class="text-red-600 font-bold">${message}</div>`
         : `<div class="flex items-center justify-center space-x-3">

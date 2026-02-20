@@ -1,15 +1,16 @@
 import {appState} from "../shared/state.js";
 import {promptPhoneNumber} from "./main.js";
 import {supabaseClient} from "../shared/supabase.js";
+import QRCode from "qrcode";
 
 // --- PARENT LOOKUP LOGIC ---
 export async function performParentLookup() {
     const phoneInput = document.getElementById('lookup-phone');
     if (!phoneInput) return;
-    
+
     const phone = phoneInput.value;
     appState.cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
-    
+
     const { data: kids, error } = await supabaseClient
         .from('students')
         .select('*')
@@ -26,7 +27,7 @@ export async function performParentLookup() {
         container.innerHTML = '';
         container.appendChild(template.content.cloneNode(true));
         renderAllPasses(kids);
-        
+
         const backButton = document.getElementById('parent-hub-back-button');
         if (backButton) {
             backButton.addEventListener('click', promptPhoneNumber);
@@ -49,12 +50,12 @@ export function renderAllPasses(kids) {
     const passesContainer = document.getElementById('passes-container');
     const childCount = document.getElementById('child-count');
     const tpl = document.getElementById('tpl-student');
-    
+
     if (!passesContainer || !childCount || !tpl) {
         alert("Required elements for rendering passes not found.");
         return;
     }
-    
+
     childCount.innerText = kids.length;
     passesContainer.innerHTML = '';
 
@@ -62,13 +63,13 @@ export function renderAllPasses(kids) {
         const clone = tpl.content.cloneNode(true);
         const nameEl = clone.querySelector('#pass-name');
         const canvasEl = clone.querySelector('.pass-qr');
-        
+
         if (nameEl) nameEl.innerText = kid.name;
         if (canvasEl) {
             canvasEl.setAttribute('data-student-id', kid.id);
             generateQRCodeForKid(canvasEl, kid.id, appState.cleanPhone);
         }
-        
+
         passesContainer.appendChild(clone);
     });
 }
