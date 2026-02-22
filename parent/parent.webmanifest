@@ -3,5 +3,5 @@
   "short_name": "Family Connect",
   "start_url": "index.html",
   "display": "standalone",
-  "icons": [{ "src": "bsk-parent-icon.png", "sizes": "192x192", "type": "image/png" }]
+  "icons": [{ "src": "resized-icon.png", "sizes": "192x192", "type": "image/png" }]
 }
