@@ -17,7 +17,7 @@ export function promptPhoneNumber() {
         if (performParentLookupButton) {
             performParentLookupButton.addEventListener('click', performParentLookup);
         } else {
-            console.error('perform-parent-app-lookup button not found after template render');
+            console.error('perform-parent-lookup button not found after template render');
         }
     } else {
         console.error('Template or container not found');
