@@ -5,8 +5,8 @@ export default defineConfig({
     build: {
         rollupOptions: {
             input: {
-                parent: 'parent-app/index.html',
-                teacher: 'teacher-app/index.html',
+                parent: 'parent/index.html',
+                teacher: 'teacher/index.html',
             }
         }
     }

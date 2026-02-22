@@ -1,7 +1,0 @@
-{
-  "name": "BSK Parent",
-  "short_name": "Parent",
-  "start_url": "index.html",
-  "display": "standalone",
-  "icons": [{ "src": "bsk-parent-icon.png", "sizes": "192x192", "type": "image/png" }]
-}
