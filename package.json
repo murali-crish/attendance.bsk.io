@@ -1,7 +1,7 @@
 {
-  "name": "attendance-bsk-io",
+  "name": "vv-attendance-app",
   "version": "1.0.0",
-  "description": "Attendance web app for BSK using QR codes and Supabase.",
+  "description": "Attendance web app for Vidya Vihaar QLD Branch using QR codes and Supabase.",
   "main": "index.js",
   "type": "module",
   "scripts": {
