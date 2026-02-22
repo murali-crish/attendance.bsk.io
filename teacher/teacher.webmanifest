@@ -1,0 +1,10 @@
+{
+  "name": "VV Upasthiti",
+  "short_name": "Scanner",
+  "start_url": "index.html?role=teacher",
+  "display": "standalone",
+  "icons": [
+    { "src": "vv-teacher-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "vv-teacher-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
