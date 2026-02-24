@@ -1,7 +1,13 @@
-import {performParentLookup} from "./parent.js";
+import {performParentLookup, showPassesForPhone} from "./parent.js";
 
 window.onload = function() {
-    promptPhoneNumber();
+    const savedPhone = localStorage.getItem('parentPhoneNumber');
+    if (savedPhone) {
+        showPassesForPhone(savedPhone).catch(error => console.log(error));
+    } else {
+        promptPhoneNumber();
+    }
+    addSettingsIcon();
 }
 
 export function promptPhoneNumber() {
@@ -23,4 +29,22 @@ export function promptPhoneNumber() {
         console.error('Template or container not found');
     }
     // On Submit, call performParentLookup and display QR code
+}
+
+function addSettingsIcon() {
+    let settingsIcon = document.getElementById('settings-icon');
+    if (!settingsIcon) {
+        settingsIcon = document.createElement('span');
+        settingsIcon.id = 'settings-icon';
+        settingsIcon.innerHTML = '⚙️';
+        settingsIcon.style.position = 'absolute';
+        settingsIcon.style.top = '10px';
+        settingsIcon.style.right = '10px';
+        settingsIcon.style.cursor = 'pointer';
+        document.body.appendChild(settingsIcon);
+        settingsIcon.addEventListener('click', () => {
+            localStorage.removeItem('parentPhoneNumber');
+            promptPhoneNumber();
+        });
+    }
 }
