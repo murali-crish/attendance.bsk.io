@@ -4,17 +4,23 @@ import {supabaseClient} from "../shared/supabase.js";
 import QRCode from "qrcode";
 
 // --- PARENT LOOKUP LOGIC ---
-export async function performParentLookup() {
+export function performParentLookup() {
     const phoneInput = document.getElementById('lookup-phone');
     if (!phoneInput) return;
 
     const phone = phoneInput.value;
     appState.cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
 
+    // Save to localStorage for future visits
+    localStorage.setItem('parentPhoneNumber', appState.cleanPhone);
+    showPassesForPhone(appState.cleanPhone).catch(error => console.log(error));
+}
+
+export async function showPassesForPhone(phone) {
     const { data: kids, error } = await supabaseClient
         .from('students')
         .select('*')
-        .or(`parent1_phone.eq.${appState.cleanPhone},parent2_phone.eq.${appState.cleanPhone}`);
+        .or(`parent1_phone.eq.${phone},parent2_phone.eq.${appState.cleanPhone}`);
 
     if (kids && kids.length > 0) {
         const template = document.getElementById('tpl-parent-hub');
