@@ -1,7 +1,7 @@
 {
   "name": "VV Family Connect",
   "short_name": "Family Connect",
-  "start_url": "index.html",
+  "start_url": "./",
   "display": "standalone",
   "icons": [
     { "src": "vv-parent-icon-192.png", "sizes": "192x192", "type": "image/png" },
